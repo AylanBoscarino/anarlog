@@ -13,6 +13,42 @@ pub async fn models_dir<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<S
 
 #[tauri::command]
 #[specta::specta]
+pub async fn models_base_dir<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<String, String> {
+    Ok(app
+        .local_stt()
+        .models_base_dir()
+        .to_string_lossy()
+        .to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn default_models_base_dir<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<String, String> {
+    Ok(app
+        .local_stt()
+        .default_models_base_dir()
+        .to_string_lossy()
+        .to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_models_base_dir<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    path: Option<String>,
+) -> Result<String, String> {
+    app.local_stt()
+        .set_models_base_dir(path)
+        .map(|path| path.to_string_lossy().to_string())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn cactus_models_dir<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
 ) -> Result<String, String> {
@@ -65,6 +101,19 @@ pub async fn download_model<R: tauri::Runtime>(
 ) -> Result<(), String> {
     app.local_stt()
         .download_model(model)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn download_model_from_url<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    model: LocalModel,
+    url: String,
+) -> Result<(), String> {
+    app.local_stt()
+        .download_model_from_url(model, url)
         .await
         .map_err(|e| e.to_string())
 }

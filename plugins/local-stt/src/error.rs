@@ -30,6 +30,8 @@ pub enum Error {
     ModelDeleteFailed(String),
     #[error("Model unpack failed: {0}")]
     ModelUnpackFailed(String),
+    #[error("Local STT settings failed: {0}")]
+    LocalSettingsFailed(String),
 }
 
 impl Serialize for Error {

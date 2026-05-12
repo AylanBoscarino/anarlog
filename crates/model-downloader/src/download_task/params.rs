@@ -12,6 +12,7 @@ pub(crate) struct DownloadTaskParams<M: DownloadableModel> {
     pub(crate) registry: DownloadsRegistry,
     pub(crate) model: M,
     pub(crate) url: String,
+    pub(crate) expected_checksum: Option<u32>,
     pub(crate) destination: PathBuf,
     pub(crate) final_destination: PathBuf,
     pub(crate) models_base: PathBuf,

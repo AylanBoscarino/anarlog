@@ -31,7 +31,7 @@ pub(crate) fn spawn_download_task<M: DownloadableModel>(
             return;
         }
 
-        if let Some(expected_checksum) = params.model.download_checksum()
+        if let Some(expected_checksum) = params.expected_checksum
             && let Err(error) = steps::verify_checksum(&params, expected_checksum).await
         {
             let reason = log_checksum_error(&error);

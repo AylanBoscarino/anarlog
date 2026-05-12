@@ -319,6 +319,18 @@
           "markdownDescription": "Denies the cancel_download command without any pre-configured scope."
         },
         {
+          "description": "Enables the default_models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-default-models-base-dir",
+          "markdownDescription": "Enables the default_models_base_dir command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the default_models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-default-models-base-dir",
+          "markdownDescription": "Denies the default_models_base_dir command without any pre-configured scope."
+        },
+        {
           "description": "Enables the delete_model command without any pre-configured scope.",
           "type": "string",
           "const": "allow-delete-model",
@@ -341,6 +353,18 @@
           "type": "string",
           "const": "deny-download-model",
           "markdownDescription": "Denies the download_model command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the download_model_from_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-download-model-from-url",
+          "markdownDescription": "Enables the download_model_from_url command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the download_model_from_url command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-download-model-from-url",
+          "markdownDescription": "Denies the download_model_from_url command without any pre-configured scope."
         },
         {
           "description": "Enables the get_server_for_model command without any pre-configured scope.",
@@ -427,6 +451,18 @@
           "markdownDescription": "Denies the list_supported_models command without any pre-configured scope."
         },
         {
+          "description": "Enables the models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-models-base-dir",
+          "markdownDescription": "Enables the models_base_dir command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-models-base-dir",
+          "markdownDescription": "Denies the models_base_dir command without any pre-configured scope."
+        },
+        {
           "description": "Enables the models_dir command without any pre-configured scope.",
           "type": "string",
           "const": "allow-models-dir",
@@ -437,6 +473,18 @@
           "type": "string",
           "const": "deny-models-dir",
           "markdownDescription": "Denies the models_dir command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the set_models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-set-models-base-dir",
+          "markdownDescription": "Enables the set_models_base_dir command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the set_models_base_dir command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-set-models-base-dir",
+          "markdownDescription": "Denies the set_models_base_dir command without any pre-configured scope."
         },
         {
           "description": "Enables the start_server command without any pre-configured scope.",
@@ -463,10 +511,10 @@
           "markdownDescription": "Denies the stop_server command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-models-dir`\n- `allow-is-model-downloaded`\n- `allow-is-model-downloading`\n- `allow-download-model`\n- `allow-cancel-download`\n- `allow-delete-model`\n- `allow-start-server`\n- `allow-stop-server`\n- `allow-get-server-for-model`\n- `allow-get-servers`\n- `allow-list-supported-models`\n- `allow-list-supported-languages`\n- `allow-cactus-models-dir`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-models-dir`\n- `allow-models-base-dir`\n- `allow-default-models-base-dir`\n- `allow-set-models-base-dir`\n- `allow-is-model-downloaded`\n- `allow-is-model-downloading`\n- `allow-download-model`\n- `allow-download-model-from-url`\n- `allow-cancel-download`\n- `allow-delete-model`\n- `allow-start-server`\n- `allow-stop-server`\n- `allow-get-server-for-model`\n- `allow-get-servers`\n- `allow-list-supported-models`\n- `allow-list-supported-languages`\n- `allow-cactus-models-dir`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-models-dir`\n- `allow-is-model-downloaded`\n- `allow-is-model-downloading`\n- `allow-download-model`\n- `allow-cancel-download`\n- `allow-delete-model`\n- `allow-start-server`\n- `allow-stop-server`\n- `allow-get-server-for-model`\n- `allow-get-servers`\n- `allow-list-supported-models`\n- `allow-list-supported-languages`\n- `allow-cactus-models-dir`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-models-dir`\n- `allow-models-base-dir`\n- `allow-default-models-base-dir`\n- `allow-set-models-base-dir`\n- `allow-is-model-downloaded`\n- `allow-is-model-downloading`\n- `allow-download-model`\n- `allow-download-model-from-url`\n- `allow-cancel-download`\n- `allow-delete-model`\n- `allow-start-server`\n- `allow-stop-server`\n- `allow-get-server-for-model`\n- `allow-get-servers`\n- `allow-list-supported-models`\n- `allow-list-supported-languages`\n- `allow-cactus-models-dir`"
         }
       ]
     }

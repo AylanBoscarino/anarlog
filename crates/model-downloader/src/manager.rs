@@ -58,12 +58,25 @@ impl<M: DownloadableModel> ModelDownloadManager<M> {
     }
 
     pub async fn download(&self, model: &M) -> Result<(), Error> {
-        let key = model.download_key();
-        let generation = self.next_generation.fetch_add(1, Ordering::Relaxed);
-
         let url = model
             .download_url()
             .ok_or_else(|| Error::NoDownloadUrl(model.download_key()))?;
+        self.download_with_url(model, url, model.download_checksum())
+            .await
+    }
+
+    pub async fn download_from_url(&self, model: &M, url: String) -> Result<(), Error> {
+        self.download_with_url(model, url, None).await
+    }
+
+    async fn download_with_url(
+        &self,
+        model: &M,
+        url: String,
+        expected_checksum: Option<u32>,
+    ) -> Result<(), Error> {
+        let key = model.download_key();
+        let generation = self.next_generation.fetch_add(1, Ordering::Relaxed);
 
         let models_base = self.runtime.models_base()?;
         let final_destination = model.download_destination(&models_base);
@@ -81,6 +94,7 @@ impl<M: DownloadableModel> ModelDownloadManager<M> {
                 registry: self.downloads.clone(),
                 model: model.clone(),
                 url,
+                expected_checksum,
                 destination: destination.clone(),
                 final_destination: final_destination.clone(),
                 models_base: models_base.clone(),

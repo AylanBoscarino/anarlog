@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-models-base-dir"
+description = "Enables the models_base_dir command without any pre-configured scope."
+commands.allow = ["models_base_dir"]
+
+[[permission]]
+identifier = "deny-models-base-dir"
+description = "Denies the models_base_dir command without any pre-configured scope."
+commands.deny = ["models_base_dir"]

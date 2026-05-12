@@ -1,4 +1,5 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { open as selectFolder } from "@tauri-apps/plugin-dialog";
 import {
   AlertCircle,
   Download,
@@ -7,7 +8,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import {
   commands as localSttCommands,
@@ -36,7 +37,11 @@ import {
 } from "~/settings/ai/shared";
 import * as settings from "~/store/tinybase/store/settings";
 import { useListener } from "~/stt/contexts";
-import { localSttQueries, useLocalModelDownload } from "~/stt/useLocalSttModel";
+import {
+  localSttKeys,
+  localSttQueries,
+  useLocalModelDownload,
+} from "~/stt/useLocalSttModel";
 
 export function ConfigureProviders() {
   const { accordionValue, setAccordionValue, hyprAccordionRef } =
@@ -267,6 +272,71 @@ function CactusRow({
   );
 }
 
+function LocalModelFolderPicker() {
+  const queryClient = useQueryClient();
+
+  const modelsBase = useQuery({
+    queryKey: [...localSttKeys.all, "models-base-dir"],
+    queryFn: async () => {
+      const result = await localSttCommands.modelsBaseDir();
+      if (result.status === "error") {
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+  });
+
+  const defaultModelsBase = useQuery({
+    queryKey: [...localSttKeys.all, "default-models-base-dir"],
+    queryFn: async () => {
+      const result = await localSttCommands.defaultModelsBaseDir();
+      if (result.status === "error") {
+        throw new Error(result.error);
+      }
+      return result.data;
+    },
+    staleTime: Infinity,
+  });
+
+  const handleSelectFolder = useCallback(async () => {
+    const selected = await selectFolder({
+      directory: true,
+      multiple: false,
+      defaultPath: modelsBase.data ?? defaultModelsBase.data,
+    });
+
+    if (typeof selected !== "string") {
+      return;
+    }
+
+    const result = await localSttCommands.setModelsBaseDir(selected);
+    if (result.status === "ok") {
+      await queryClient.invalidateQueries({ queryKey: localSttKeys.all });
+    }
+  }, [defaultModelsBase.data, modelsBase.data, queryClient]);
+
+  const path = modelsBase.data ?? defaultModelsBase.data ?? "Select folder";
+
+  return (
+    <button
+      onClick={handleSelectFolder}
+      title={path}
+      className={cn([
+        "h-8.5 max-w-48 rounded-full px-3 text-center font-mono text-xs",
+        "bg-linear-to-t from-neutral-200 to-neutral-100 text-neutral-900",
+        "shadow-xs hover:shadow-md",
+        "transition-all duration-150",
+        "flex items-center justify-center gap-1.5",
+      ])}
+    >
+      <FolderOpen className="size-4 shrink-0" />
+      <span className="truncate">
+        {modelsBase.isLoading ? "Loading..." : path}
+      </span>
+    </button>
+  );
+}
+
 // @ts-expect-error
 function CactusSettings({ models }: { models: LocalModel[] }) {
   const downloadedQueries = useQueries({
@@ -403,7 +473,7 @@ function LocalModelAction({
 
   if (isDownloaded) {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <button
           onClick={onOpen}
           className={cn([
@@ -436,19 +506,22 @@ function LocalModelAction({
 
   if (hasError) {
     return (
-      <button
-        onClick={onDownload}
-        className={cn([
-          "h-8.5 w-fit rounded-full px-4 text-center font-mono text-xs",
-          "bg-linear-to-t from-red-600 to-red-500 text-white",
-          "shadow-md hover:scale-[102%] hover:shadow-lg active:scale-[98%]",
-          "transition-all duration-150",
-          "flex items-center justify-center gap-1.5",
-        ])}
-      >
-        <AlertCircle className="size-4" />
-        <span>Retry</span>
-      </button>
+      <div className="flex items-center gap-1.5">
+        <LocalModelFolderPicker />
+        <button
+          onClick={onDownload}
+          className={cn([
+            "h-8.5 w-fit rounded-full px-4 text-center font-mono text-xs",
+            "bg-linear-to-t from-red-600 to-red-500 text-white",
+            "shadow-md hover:scale-[102%] hover:shadow-lg active:scale-[98%]",
+            "transition-all duration-150",
+            "flex items-center justify-center gap-1.5",
+          ])}
+        >
+          <AlertCircle className="size-4" />
+          <span>Retry</span>
+        </button>
+      </div>
     );
   }
 
@@ -481,29 +554,32 @@ function LocalModelAction({
   }
 
   return (
-    <button
-      onClick={onDownload}
-      className={cn([
-        "relative h-8.5 w-fit overflow-hidden",
-        "rounded-full px-4 text-center font-mono text-xs",
-        "bg-linear-to-t from-neutral-200 to-neutral-100 text-neutral-900",
-        "shadow-xs hover:scale-[102%] hover:shadow-md active:scale-[98%]",
-        "transition-all duration-150",
-        "flex items-center justify-center gap-1.5",
-      ])}
-    >
-      {showShimmer && (
-        <div
-          className={cn([
-            "absolute inset-0 -translate-x-full",
-            "bg-linear-to-r from-transparent via-neutral-400/30 to-transparent",
-            "animate-shimmer",
-          ])}
-        />
-      )}
-      <Download className="relative z-10 size-4" />
-      <span className="relative z-10">Download</span>
-    </button>
+    <div className="flex items-center gap-1.5">
+      <LocalModelFolderPicker />
+      <button
+        onClick={onDownload}
+        className={cn([
+          "relative h-8.5 w-fit overflow-hidden",
+          "rounded-full px-4 text-center font-mono text-xs",
+          "bg-linear-to-t from-neutral-200 to-neutral-100 text-neutral-900",
+          "shadow-xs hover:scale-[102%] hover:shadow-md active:scale-[98%]",
+          "transition-all duration-150",
+          "flex items-center justify-center gap-1.5",
+        ])}
+      >
+        {showShimmer && (
+          <div
+            className={cn([
+              "absolute inset-0 -translate-x-full",
+              "bg-linear-to-r from-transparent via-neutral-400/30 to-transparent",
+              "animate-shimmer",
+            ])}
+          />
+        )}
+        <Download className="relative z-10 size-4" />
+        <span className="relative z-10">Download</span>
+      </button>
+    </div>
   );
 }
 
@@ -518,6 +594,7 @@ function HyprProviderLocalRow({
 }) {
   const handleSelectModel = useSafeSelectModel();
   const { shouldHighlightDownload } = useSttSettings();
+  const [huggingFaceUrl, setHuggingFaceUrl] = useState("");
 
   const {
     progress,
@@ -549,17 +626,34 @@ function HyprProviderLocalRow({
         )}
       </div>
 
-      <LocalModelAction
-        isDownloaded={isDownloaded}
-        showProgress={showProgress}
-        progress={progress}
-        hasError={hasError}
-        highlight={shouldHighlightDownload}
-        onOpen={handleOpen}
-        onDownload={handleDownload}
-        onCancel={handleCancel}
-        onDelete={handleDelete}
-      />
+      <div className="flex items-center gap-1.5">
+        {!isDownloaded && !showProgress && (
+          <input
+            type="url"
+            value={huggingFaceUrl}
+            onChange={(e) => setHuggingFaceUrl(e.target.value)}
+            placeholder="Hugging Face URL"
+            title="Optional Hugging Face download URL"
+            className={cn([
+              "h-8.5 min-w-0 flex-1 rounded-full px-3 font-mono text-xs sm:w-54",
+              "border border-neutral-200 bg-neutral-100 text-neutral-900",
+              "placeholder:text-neutral-400",
+              "focus:border-neutral-400 focus:outline-none",
+            ])}
+          />
+        )}
+        <LocalModelAction
+          isDownloaded={isDownloaded}
+          showProgress={showProgress}
+          progress={progress}
+          hasError={hasError}
+          highlight={shouldHighlightDownload}
+          onOpen={handleOpen}
+          onDownload={() => handleDownload(huggingFaceUrl)}
+          onCancel={handleCancel}
+          onDelete={handleDelete}
+        />
+      </div>
     </HyprProviderRow>
   );
 }

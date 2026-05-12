@@ -18,19 +18,84 @@ use crate::{
     types::DownloadProgressPayload,
 };
 
+const LOCAL_STT_SETTINGS_FILENAME: &str = "local-stt.json";
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct LocalSttSettings {
+    models_base: Option<String>,
+}
+
+fn default_models_base<R: Runtime>(manager: &impl tauri::Manager<R>) -> PathBuf {
+    use tauri_plugin_settings::SettingsPluginExt;
+    manager
+        .settings()
+        .global_base()
+        .map(|base| base.join("models").into_std_path_buf())
+        .unwrap_or_else(|_| dirs::data_dir().unwrap_or_default().join("models"))
+}
+
+fn settings_path<R: Runtime>(manager: &impl tauri::Manager<R>) -> PathBuf {
+    use tauri_plugin_settings::SettingsPluginExt;
+    manager
+        .settings()
+        .global_base()
+        .map(|base| base.join(LOCAL_STT_SETTINGS_FILENAME).into_std_path_buf())
+        .unwrap_or_else(|_| {
+            dirs::data_dir()
+                .unwrap_or_default()
+                .join(LOCAL_STT_SETTINGS_FILENAME)
+        })
+}
+
+fn read_custom_models_base<R: Runtime>(manager: &impl tauri::Manager<R>) -> Option<PathBuf> {
+    let content = std::fs::read_to_string(settings_path(manager)).ok()?;
+    let settings = serde_json::from_str::<LocalSttSettings>(&content).ok()?;
+    settings
+        .models_base
+        .map(|path| path.trim().to_string())
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+}
+
+fn models_base<R: Runtime>(manager: &impl tauri::Manager<R>) -> PathBuf {
+    read_custom_models_base(manager).unwrap_or_else(|| default_models_base(manager))
+}
+
+fn persist_models_base<R: Runtime>(
+    manager: &impl tauri::Manager<R>,
+    path: Option<PathBuf>,
+) -> Result<(), crate::Error> {
+    let settings_path = settings_path(manager);
+
+    if let Some(parent) = settings_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| crate::Error::LocalSettingsFailed(e.to_string()))?;
+    }
+
+    if let Some(path) = path {
+        std::fs::create_dir_all(&path)
+            .map_err(|e| crate::Error::LocalSettingsFailed(e.to_string()))?;
+        let content = serde_json::to_string_pretty(&LocalSttSettings {
+            models_base: Some(path.to_string_lossy().to_string()),
+        })
+        .map_err(|e| crate::Error::LocalSettingsFailed(e.to_string()))?;
+        std::fs::write(settings_path, content)
+            .map_err(|e| crate::Error::LocalSettingsFailed(e.to_string()))?;
+    } else if settings_path.exists() {
+        std::fs::remove_file(settings_path)
+            .map_err(|e| crate::Error::LocalSettingsFailed(e.to_string()))?;
+    }
+
+    Ok(())
+}
+
 struct TauriModelRuntime<R: Runtime> {
     app_handle: tauri::AppHandle<R>,
 }
 
 impl<R: Runtime> ModelDownloaderRuntime<LocalModel> for TauriModelRuntime<R> {
     fn models_base(&self) -> Result<PathBuf, hypr_model_downloader::Error> {
-        use tauri_plugin_settings::SettingsPluginExt;
-        Ok(self
-            .app_handle
-            .settings()
-            .global_base()
-            .map(|base| base.join("models").into_std_path_buf())
-            .unwrap_or_else(|_| dirs::data_dir().unwrap_or_default().join("models")))
+        Ok(models_base(&self.app_handle))
     }
 
     fn emit_progress(&self, model: &LocalModel, status: hypr_model_downloader::DownloadStatus) {
@@ -67,31 +132,32 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
     }
 
     pub fn models_dir(&self) -> PathBuf {
-        use tauri_plugin_settings::SettingsPluginExt;
-        self.manager
-            .settings()
-            .global_base()
-            .map(|base| base.join("models").join("stt").into_std_path_buf())
-            .unwrap_or_else(|_| {
-                dirs::data_dir()
-                    .unwrap_or_default()
-                    .join("models")
-                    .join("stt")
-            })
+        models_base(self.manager).join("stt")
     }
 
     pub fn cactus_models_dir(&self) -> PathBuf {
-        use tauri_plugin_settings::SettingsPluginExt;
-        self.manager
-            .settings()
-            .global_base()
-            .map(|base| base.join("models").join("cactus").into_std_path_buf())
-            .unwrap_or_else(|_| {
-                dirs::data_dir()
-                    .unwrap_or_default()
-                    .join("models")
-                    .join("cactus")
-            })
+        models_base(self.manager).join("cactus")
+    }
+
+    pub fn models_base_dir(&self) -> PathBuf {
+        models_base(self.manager)
+    }
+
+    pub fn default_models_base_dir(&self) -> PathBuf {
+        default_models_base(self.manager)
+    }
+
+    pub fn set_models_base_dir(&self, path: Option<String>) -> Result<PathBuf, crate::Error> {
+        let normalized = path.and_then(|path| {
+            let path = path.trim();
+            if path.is_empty() {
+                None
+            } else {
+                Some(PathBuf::from(path))
+            }
+        });
+        persist_models_base(self.manager, normalized)?;
+        Ok(self.models_base_dir())
     }
 
     pub async fn get_supervisor(&self) -> Result<supervisor::SupervisorRef, crate::Error> {
@@ -127,10 +193,7 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
         };
 
         let current_info = match server_type {
-            #[cfg(target_arch = "aarch64")]
-            ServerType::Internal => internal2_health().await,
-            #[cfg(not(target_arch = "aarch64"))]
-            ServerType::Internal => None,
+            ServerType::Internal => internal_health_for_model(&model).await,
             ServerType::External => external_health().await,
         };
 
@@ -158,6 +221,12 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
 
         match server_type {
             ServerType::Internal => {
+                #[cfg(feature = "whisper-cpp")]
+                if let LocalModel::Whisper(m) = model {
+                    let cache_dir = self.models_dir();
+                    return start_internal_server(&supervisor, cache_dir, m).await;
+                }
+
                 #[cfg(target_arch = "aarch64")]
                 {
                     use hypr_transcribe_cactus::CactusConfig;
@@ -181,6 +250,7 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
                     start_internal2_server(&supervisor, cache_dir, cactus_model, cactus_config)
                         .await
                 }
+
                 #[cfg(not(target_arch = "aarch64"))]
                 Err(crate::Error::UnsupportedModelType)
             }
@@ -232,10 +302,7 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
         };
 
         let info = match server_type {
-            #[cfg(target_arch = "aarch64")]
-            ServerType::Internal => internal2_health().await,
-            #[cfg(not(target_arch = "aarch64"))]
-            ServerType::Internal => None,
+            ServerType::Internal => internal_health_for_model(model).await,
             ServerType::External => external_health().await,
         };
 
@@ -244,18 +311,11 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
 
     #[tracing::instrument(skip_all)]
     pub async fn get_servers(&self) -> Result<HashMap<ServerType, ServerInfo>, crate::Error> {
-        #[cfg(target_arch = "aarch64")]
-        let internal_info = internal2_health().await.unwrap_or(ServerInfo {
+        let internal_info = current_internal_health().await.unwrap_or(ServerInfo {
             url: None,
             status: ServerStatus::Unreachable,
             model: None,
         });
-        #[cfg(not(target_arch = "aarch64"))]
-        let internal_info = ServerInfo {
-            url: None,
-            status: ServerStatus::Unreachable,
-            model: None,
-        };
 
         let external_info = external_health().await.unwrap_or(ServerInfo {
             url: None,
@@ -281,6 +341,32 @@ impl<'a, R: Runtime, M: Manager<R>> LocalStt<'a, R, M> {
             guard.model_downloader.clone()
         };
         downloader.download(&model).await?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn download_model_from_url(
+        &self,
+        model: LocalModel,
+        url: String,
+    ) -> Result<(), crate::Error> {
+        Self::ensure_stt_model(&model)?;
+
+        let url = url.trim().to_string();
+        if !(url.starts_with("https://") || url.starts_with("http://")) {
+            return Err(crate::Error::ModelDownloaderError(
+                hypr_model_downloader::Error::OperationFailed(
+                    "Download URL must start with http:// or https://".to_string(),
+                ),
+            ));
+        }
+
+        let downloader = {
+            let state = self.manager.state::<crate::SharedState>();
+            let guard = state.lock().await;
+            guard.model_downloader.clone()
+        };
+        downloader.download_from_url(&model, url).await?;
         Ok(())
     }
 
@@ -408,7 +494,14 @@ async fn start_external_server<R: Runtime, T: Manager<R>>(
 
     let app_handle = manager.app_handle().clone();
     let cmd_builder = external::CommandBuilder::new(move || {
+        #[cfg(debug_assertions)]
         let mut cmd = app_handle
+            .sidecar2()
+            .sidecar("char-sidecar-stt")?
+            .args(["serve", "--any-token"]);
+
+        #[cfg(not(debug_assertions))]
+        let cmd = app_handle
             .sidecar2()
             .sidecar("char-sidecar-stt")?
             .args(["serve", "--any-token"]);
@@ -432,6 +525,34 @@ async fn start_external_server<R: Runtime, T: Manager<R>>(
         .await
         .and_then(|info| info.url)
         .ok_or_else(|| crate::Error::ServerStartFailed("empty_health".to_string()))
+}
+
+async fn internal_health_for_model(model: &LocalModel) -> Option<ServerInfo> {
+    match model {
+        #[cfg(feature = "whisper-cpp")]
+        LocalModel::Whisper(_) => internal_health().await,
+        #[cfg(not(feature = "whisper-cpp"))]
+        LocalModel::Whisper(_) => None,
+        #[cfg(target_arch = "aarch64")]
+        LocalModel::Cactus(_) => internal2_health().await,
+        #[cfg(not(target_arch = "aarch64"))]
+        LocalModel::Cactus(_) => None,
+        LocalModel::Am(_) | LocalModel::GgufLlm(_) | LocalModel::CactusLlm(_) => None,
+    }
+}
+
+async fn current_internal_health() -> Option<ServerInfo> {
+    #[cfg(feature = "whisper-cpp")]
+    if let Some(info) = internal_health().await {
+        return Some(info);
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    if let Some(info) = internal2_health().await {
+        return Some(info);
+    }
+
+    None
 }
 
 #[cfg(target_arch = "aarch64")]

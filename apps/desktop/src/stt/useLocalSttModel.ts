@@ -107,20 +107,27 @@ export function useLocalModelDownload(
     }
   }, [isDownloaded.data, model, onDownloadComplete, progress]);
 
-  const handleDownload = useCallback(() => {
-    if (isDownloaded.data || isDownloading.data || isStarting) {
-      return;
-    }
-    setErrorMessage(null);
-    setIsStarting(true);
-    setProgress(0);
-    void localSttCommands.downloadModel(model).then((result) => {
-      if (result.status === "error") {
-        setErrorMessage(result.error);
-        setIsStarting(false);
+  const handleDownload = useCallback(
+    (sourceUrl?: string) => {
+      if (isDownloaded.data || isDownloading.data || isStarting) {
+        return;
       }
-    });
-  }, [isDownloaded.data, isDownloading.data, isStarting, model]);
+      setErrorMessage(null);
+      setIsStarting(true);
+      setProgress(0);
+      const trimmedUrl = sourceUrl?.trim();
+      const request = trimmedUrl
+        ? localSttCommands.downloadModelFromUrl(model, trimmedUrl)
+        : localSttCommands.downloadModel(model);
+      void request.then((result) => {
+        if (result.status === "error") {
+          setErrorMessage(result.error);
+          setIsStarting(false);
+        }
+      });
+    },
+    [isDownloaded.data, isDownloading.data, isStarting, model],
+  );
 
   const handleCancel = useCallback(() => {
     void localSttCommands.cancelDownload(model);

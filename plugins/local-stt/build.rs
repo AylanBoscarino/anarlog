@@ -1,9 +1,13 @@
 const COMMANDS: &[&str] = &[
     "models_dir",
+    "models_base_dir",
+    "default_models_base_dir",
+    "set_models_base_dir",
     "cactus_models_dir",
     "is_model_downloaded",
     "is_model_downloading",
     "download_model",
+    "download_model_from_url",
     "cancel_download",
     "delete_model",
     "start_server",
@@ -11,7 +15,6 @@ const COMMANDS: &[&str] = &[
     "get_server_for_model",
     "get_servers",
     "list_supported_models",
-    "list_supported_languages",
 ];
 
 fn main() {

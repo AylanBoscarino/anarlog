@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-download-model-from-url"
+description = "Enables the download_model_from_url command without any pre-configured scope."
+commands.allow = ["download_model_from_url"]
+
+[[permission]]
+identifier = "deny-download-model-from-url"
+description = "Denies the download_model_from_url command without any pre-configured scope."
+commands.deny = ["download_model_from_url"]

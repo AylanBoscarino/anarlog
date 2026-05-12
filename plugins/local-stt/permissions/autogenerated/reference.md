@@ -5,9 +5,13 @@ Default permissions for the plugin
 #### This default permission set includes the following:
 
 - `allow-models-dir`
+- `allow-models-base-dir`
+- `allow-default-models-base-dir`
+- `allow-set-models-base-dir`
 - `allow-is-model-downloaded`
 - `allow-is-model-downloading`
 - `allow-download-model`
+- `allow-download-model-from-url`
 - `allow-cancel-download`
 - `allow-delete-model`
 - `allow-start-server`
@@ -82,6 +86,32 @@ Denies the cancel_download command without any pre-configured scope.
 <tr>
 <td>
 
+`local-stt:allow-default-models-base-dir`
+
+</td>
+<td>
+
+Enables the default_models_base_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:deny-default-models-base-dir`
+
+</td>
+<td>
+
+Denies the default_models_base_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `local-stt:allow-delete-model`
 
 </td>
@@ -127,6 +157,32 @@ Enables the download_model command without any pre-configured scope.
 <td>
 
 Denies the download_model command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:allow-download-model-from-url`
+
+</td>
+<td>
+
+Enables the download_model_from_url command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:deny-download-model-from-url`
+
+</td>
+<td>
+
+Denies the download_model_from_url command without any pre-configured scope.
 
 </td>
 </tr>
@@ -316,6 +372,32 @@ Denies the list_supported_models command without any pre-configured scope.
 <tr>
 <td>
 
+`local-stt:allow-models-base-dir`
+
+</td>
+<td>
+
+Enables the models_base_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:deny-models-base-dir`
+
+</td>
+<td>
+
+Denies the models_base_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `local-stt:allow-models-dir`
 
 </td>
@@ -335,6 +417,32 @@ Enables the models_dir command without any pre-configured scope.
 <td>
 
 Denies the models_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:allow-set-models-base-dir`
+
+</td>
+<td>
+
+Enables the set_models_base_dir command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`local-stt:deny-set-models-base-dir`
+
+</td>
+<td>
+
+Denies the set_models_base_dir command without any pre-configured scope.
 
 </td>
 </tr>
