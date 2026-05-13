@@ -337,9 +337,16 @@ function useConfiguredMapping(): Record<
 
   const cactusModels =
     supportedModels.data?.filter((m) => m.model_type === "cactus") ?? [];
+  const whispercppModels =
+    supportedModels.data?.filter((m) => m.model_type === "whispercpp") ?? [];
 
   const cactusDownloaded = useQueries({
     queries: [...cactusModels.map((m) => sttModelQueries.isDownloaded(m.key))],
+  });
+  const whispercppDownloaded = useQueries({
+    queries: [
+      ...whispercppModels.map((m) => sttModelQueries.isDownloaded(m.key)),
+    ],
   });
 
   return Object.fromEntries(
@@ -381,6 +388,15 @@ function useConfiguredMapping(): Record<
             });
           });
         }
+
+        whispercppModels.forEach((model, i) => {
+          models.push({
+            id: model.key,
+            isDownloaded: whispercppDownloaded[i]?.data ?? false,
+            displayName: model.display_name,
+            category: "experimental",
+          });
+        });
 
         return [provider.id, { configured: true, models }];
       }
