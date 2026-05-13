@@ -53,6 +53,7 @@ export function getBatchProvider(
   if (provider === "hyprnote") {
     if (model.startsWith("am-")) return "am";
     if (model.startsWith("cactus-")) return "cactus";
+    if (model.startsWith("Quantized")) return "whispercpp";
     return "hyprnote";
   }
   if (DIRECT_BATCH_PROVIDERS.has(provider as TranscriptionParams["provider"])) {
